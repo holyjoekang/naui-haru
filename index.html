@@ -14,14 +14,12 @@
 </head>
 <body>
 <header class="top">
-  <div>
-    <p class="band-label" id="bandLabel">…</p>
-    <h1 id="greeting">나의하루</h1>
-  </div>
+  <p class="band-label" id="bandLabel">…</p>
   <div class="top-right">
     <p class="clock" id="clock">--:--</p>
     <button class="icon-btn" id="openSettings" aria-label="설정">⚙︎</button>
   </div>
+  <h1 id="greeting">나의하루</h1>
 </header>
 
 <nav class="bands" id="bandNav" aria-label="시간대"></nav>
@@ -32,7 +30,7 @@
   <section id="otherCards" class="cards" aria-label="다른 카드"></section>
 </main>
 
-<button class="fab" id="fab" aria-label="빠른 입력">+</button>
+<div class="dock"><button class="fab" id="fab" aria-label="빠른 입력">＋ 빠른 입력</button></div>
 
 <dialog id="quickDialog">
   <form method="dialog" class="sheet" id="quickForm">

@@ -1,5 +1,5 @@
 // 오프라인에서도 앱 화면이 열리도록 정적 파일을 캐시 (데이터는 기기에 저장)
-const CACHE = 'naui-haru-v1';
+const CACHE = 'naui-haru-v2';
 const FILES = ['/', '/index.html', '/style.css', '/app.js', '/manifest.webmanifest', '/icon.svg', '/icon-192.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => {

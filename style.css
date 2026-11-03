@@ -39,10 +39,10 @@ body {
 }
 button, input, select { font: inherit; color: inherit; }
 .top {
-  display: flex; justify-content: space-between; align-items: flex-end;
-  padding: 20px 16px 8px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+  padding: 16px 16px 8px; column-gap: 12px;
 }
-.top h1 { margin: 2px 0 0; font-size: 24px; }
+.top h1 { flex-basis: 100%; margin: 4px 0 0; font-size: 24px; word-break: keep-all; overflow-wrap: anywhere; }
 .band-label { margin: 0; color: var(--accent); font-weight: 600; font-size: 14px; }
 .top-right { display: flex; align-items: center; gap: 8px; }
 .clock { margin: 0; font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -59,8 +59,8 @@ button, input, select { font: inherit; color: inherit; }
 
 main { padding: 8px 16px; }
 .section-title { font-size: 14px; color: var(--muted); font-weight: 600; margin: 20px 4px 8px; }
-.cards { display: grid; gap: 12px; }
-@media (min-width: 640px) { .cards { grid-template-columns: 1fr 1fr; } .card.wide { grid-column: 1 / -1; } }
+.cards { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .cards { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .card.wide { grid-column: 1 / -1; } }
 
 .card {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -113,10 +113,15 @@ textarea { width: 100%; resize: vertical; min-height: 64px; font: inherit; color
 .stats b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
 .stats span { color: var(--muted); font-size: 12px; }
 
+.dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--bg); border-top: 1px solid var(--line);
+}
 .fab {
-  position: fixed; right: max(16px, calc(50% - 344px)); bottom: calc(20px + env(safe-area-inset-bottom));
-  width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--accent); color: #fff;
-  font-size: 28px; box-shadow: 0 4px 14px rgba(0,0,0,.2); cursor: pointer;
+  display: block; width: 100%; max-width: 688px; margin: 0 auto; height: 50px;
+  border-radius: 14px; border: 0; background: var(--accent); color: #fff;
+  font-size: 16px; font-weight: 600; cursor: pointer;
 }
 dialog { border: 0; padding: 0; border-radius: 20px; width: min(520px, calc(100% - 32px)); background: var(--card); color: var(--ink); }
 dialog::backdrop { background: rgba(0,0,0,.4); }
