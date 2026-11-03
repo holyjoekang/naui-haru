@@ -68,6 +68,17 @@
     <label>바로타 주소 <input name="barotaUrl"></label>
     <label>뉴스 키워드(쉼표로 구분) <input name="newsKeywords"></label>
     <label>체크할 습관(쉼표로 구분) <input name="habits"></label>
+    <fieldset>
+      <legend>Google Sheets 저장</legend>
+      <p class="muted" id="syncStatus">연결 안 됨 — 이 기기에만 저장 중</p>
+      <label>Apps Script 웹 앱 주소 <input name="syncUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off"></label>
+      <label>비밀 키 <input name="syncKey" type="password" autocomplete="off"></label>
+      <div class="row gap">
+        <button type="button" class="ghost" id="connectSheet">연결</button>
+        <button type="button" class="ghost" id="syncNow">동기화</button>
+        <button type="button" class="ghost" id="disconnectSheet">끊기</button>
+      </div>
+    </fieldset>
     <div class="row gap">
       <button type="button" class="ghost" id="exportData">데이터 내보내기</button>
       <button type="button" class="ghost" id="importData">가져오기</button>

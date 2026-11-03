@@ -31,23 +31,151 @@ const DEFAULT_STATE = {
   workouts: [],
 };
 
-/* ---------- storage ---------- */
+/* ---------- storage ----------
+ * 원본은 Google Sheets(gas/Code.gs 웹앱). 기기에는 오프라인용 사본만 둔다.
+ * 시트 연결 전에는 지금처럼 이 기기에만 저장된다. */
+const SYNC_KEY = 'naui-haru-sync'; // { url, key, base(마지막으로 맞춘 시트 버전), dirty, lastAt, error }
+function normalize(s) {
+  s = s || {};
+  return {
+    ...structuredClone(DEFAULT_STATE),
+    ...s,
+    settings: { ...DEFAULT_STATE.settings, ...(s.settings || {}) },
+    days: s.days || {}, todos: s.todos || [], memos: s.memos || [], workouts: s.workouts || [],
+  };
+}
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return structuredClone(DEFAULT_STATE);
-    const s = JSON.parse(raw);
-    return {
-      ...structuredClone(DEFAULT_STATE),
-      ...s,
-      settings: { ...DEFAULT_STATE.settings, ...(s.settings || {}) },
-    };
+    return raw ? normalize(JSON.parse(raw)) : structuredClone(DEFAULT_STATE);
   } catch { return structuredClone(DEFAULT_STATE); }
 }
 let state = load();
-function save() {
+let sync = (() => { try { return { base: 0, dirty: false, ...JSON.parse(localStorage.getItem(SYNC_KEY) || '{}') }; } catch { return { base: 0, dirty: false }; } })();
+const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch {} };
+const syncOn = () => !!(sync.url && sync.key);
+
+function saveLocal() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
 }
+function save() {
+  saveLocal();
+  sync.dirty = true; saveSync();
+  schedulePush();
+}
+
+/* 두 기기에서 따로 고친 내용 합치기: 목록은 id 기준 합집합(이 기기 우선), 하루 체크는 둘 중 하나라도 하면 완료 */
+function mergeStates(local, remote) {
+  const byId = (a, b) => {
+    const m = new Map(b.map(x => [x.id, x]));
+    for (const x of a) m.set(x.id, x);
+    return [...m.values()];
+  };
+  const days = { ...remote.days };
+  for (const [k, l] of Object.entries(local.days)) {
+    const r = days[k];
+    if (!r) { days[k] = l; continue; }
+    const habits = { ...(r.habits || {}) };
+    for (const h in l.habits || {}) habits[h] = habits[h] || l.habits[h];
+    days[k] = {
+      ...r, ...l, habits,
+      prayer: l.prayer || r.prayer, praise: l.praise || r.praise, diary: l.diary || r.diary, blog: l.blog || r.blog,
+      tori: { am: l.tori?.am || r.tori?.am, pm: l.tori?.pm || r.tori?.pm },
+      word: l.word || r.word || '',
+    };
+  }
+  const memos = byId(local.memos, remote.memos);
+  const order = new Map([...remote.memos, ...local.memos].map((x, i) => [x.id, i]));
+  memos.sort((a, b) => order.get(a.id) - order.get(b.id));
+  return normalize({
+    settings: local.settings,
+    days,
+    todos: byId(local.todos, remote.todos),
+    memos,
+    workouts: byId(local.workouts, remote.workouts),
+  });
+}
+
+let pushTimer = null, syncing = null;
+function schedulePush() {
+  if (!syncOn()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => runSync(), 1500);
+}
+function setSyncStatus(error) {
+  sync.error = error || null;
+  if (!error) sync.lastAt = Date.now();
+  saveSync(); showSyncStatus();
+}
+async function sheetGet() {
+  const r = await fetch(`${sync.url}?key=${encodeURIComponent(sync.key)}`);
+  return r.json();
+}
+async function sheetPost(body) {
+  // text/plain 이라 브라우저가 사전 요청 없이 Apps Script로 바로 보냄
+  const r = await fetch(sync.url, { method: 'POST', body: JSON.stringify({ key: sync.key, ...body }) });
+  return r.json();
+}
+/* 시트와 맞추기: 바뀐 게 없으면 받아오고, 고친 게 있으면 올림(충돌 시 합쳐서 다시 올림) */
+function runSync() {
+  if (!syncOn() || !navigator.onLine) return Promise.resolve();
+  if (syncing) return syncing.then(() => (sync.dirty ? runSync() : undefined));
+  let pushing = false;
+  syncing = (async () => {
+    try {
+      if (!sync.dirty) {
+        const res = await sheetGet();
+        if (!res.ok) throw new Error(res.error || 'get_failed');
+        if (res.updatedAt > sync.base && !sync.dirty) {
+          state = normalize(res.state); sync.base = res.updatedAt;
+          saveLocal(); render();
+        }
+        return setSyncStatus();
+      }
+      pushing = true;
+      for (let i = 0; i < 3; i++) {
+        sync.dirty = false; saveSync();
+        const res = await sheetPost({ base: sync.base, state });
+        if (res.ok) { sync.base = res.updatedAt; return setSyncStatus(); }
+        if (!res.conflict) throw new Error(res.error || 'post_failed');
+        state = mergeStates(state, normalize(res.state));
+        sync.base = res.updatedAt; sync.dirty = true;
+        saveLocal(); render();
+      }
+      throw new Error('conflict');
+    } catch (e) {
+      if (pushing) sync.dirty = true; // 못 보낸 기록은 다음에 다시 보냄
+      setSyncStatus(String(e.message || e));
+    } finally { syncing = null; }
+  })();
+  return syncing;
+}
+/* 처음 연결: 시트가 비어 있으면 이 기기 기록을 올리고, 이미 있으면 합침 */
+async function connectSheet(url, key) {
+  sync = { url, key, base: 0, dirty: false };
+  saveSync();
+  const res = await sheetGet();
+  if (!res.ok) throw new Error(res.error === 'unauthorized' ? '비밀 키가 맞지 않아요.' : '시트에 연결하지 못했어요.');
+  const hasLocal = state.todos.length || state.memos.length || state.workouts.length || Object.keys(state.days).length;
+  const remote = normalize(res.state);
+  const empty = !res.updatedAt;
+  state = empty ? state : hasLocal ? mergeStates(state, remote) : remote;
+  sync.base = res.updatedAt;
+  sync.dirty = empty || !!hasLocal;
+  saveLocal(); saveSync(); render();
+  await runSync();
+}
+function showSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (!syncOn()) { el.textContent = '연결 안 됨 — 이 기기에만 저장 중'; return; }
+  const t = sync.lastAt ? new Date(sync.lastAt) : null;
+  const when = t ? `${pad(t.getHours())}:${pad(t.getMinutes())}` : '-';
+  el.textContent = sync.error
+    ? `동기화 실패 (${sync.error}) · 마지막 성공 ${when}`
+    : `Google Sheets 연결됨 · 마지막 동기화 ${when}${sync.dirty ? ' · 보낼 기록 있음' : ''}`;
+}
+window.addEventListener('online', () => runSync());
 
 /* ---------- time helpers ---------- */
 const pad = n => String(n).padStart(2, '0');
@@ -433,7 +561,25 @@ document.getElementById('openSettings').onclick = () => {
   document.getElementById('bandInputs').innerHTML = s.bands.map(b =>
     `<label>${b.label}<input type="time" name="band_${b.id}" value="${b.start}"></label>`).join('');
   for (const n of ['name', 'workStart', 'workHours', 'diaryUrl', 'barotaUrl', 'newsKeywords', 'habits']) sf.elements[n].value = s[n];
+  sf.elements.syncUrl.value = sync.url || '';
+  sf.elements.syncKey.value = sync.key || '';
+  showSyncStatus();
   sd.showModal();
+};
+document.getElementById('connectSheet').onclick = async e => {
+  const url = sf.elements.syncUrl.value.trim(), key = sf.elements.syncKey.value.trim();
+  if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url) || !key) { alert('웹 앱 주소(https://script.google.com/...)와 비밀 키를 넣어 주세요.'); return; }
+  const btn = e.currentTarget; btn.disabled = true; btn.textContent = '연결 중…';
+  try { await connectSheet(url, key); }
+  catch (err) { sync = { base: 0, dirty: false }; saveSync(); alert(err.message || '시트에 연결하지 못했어요.'); }
+  finally { btn.disabled = false; btn.textContent = '연결'; showSyncStatus(); }
+};
+document.getElementById('syncNow').onclick = () => { if (!syncOn()) return; runSync().then(showSyncStatus); };
+document.getElementById('disconnectSheet').onclick = () => {
+  if (!syncOn() || !confirm('이 기기의 시트 연결을 끊을까요? 기록은 이 기기와 시트에 그대로 남아요.')) return;
+  sync = { base: 0, dirty: false }; saveSync();
+  sf.elements.syncUrl.value = ''; sf.elements.syncKey.value = '';
+  showSyncStatus();
 };
 sd.addEventListener('close', () => {
   if (sd.returnValue !== 'save') return;
@@ -520,5 +666,6 @@ setInterval(() => {
   if (b !== lastBand) { lastBand = b; selectedBand = null; }
   render();
 }, 30e3);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); loadWeather(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); loadWeather(); runSync(); } });
+runSync();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
