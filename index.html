@@ -3,23 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1f6feb">
+<meta name="theme-color" content="#14161c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="나의하루">
 <title>나의하루</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="top">
-  <p class="band-label" id="bandLabel">…</p>
-  <div class="top-right">
-    <p class="clock" id="clock">--:--</p>
-    <button class="icon-btn" id="openSettings" aria-label="설정">⚙︎</button>
+<header class="top hero" id="hero">
+  <div class="hero-bar">
+    <p class="band-label" id="bandLabel">…</p>
+    <div class="top-right">
+      <p class="clock" id="clock">--:--</p>
+      <button class="icon-btn" id="openSettings" aria-label="설정">⚙︎</button>
+    </div>
   </div>
   <h1 id="greeting">나의하루</h1>
+  <p class="art-cap" id="artCap"></p>
 </header>
 
 <nav class="bands" id="bandNav" aria-label="시간대"></nav>

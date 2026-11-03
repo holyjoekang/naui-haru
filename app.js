@@ -97,6 +97,25 @@ const GREET = {
   after: '수고했어요, 이제 내 시간', evening: '하루를 적는 시간', night: '내일을 준비하는 시간', weekend: '쉼이 있는 주말',
 };
 
+/* 시간대별 고흐 그림 (모두 퍼블릭 도메인) */
+const ART = {
+  dawn:    { src: 'art/starry-night.webp',         title: '별이 빛나는 밤',        year: 1889, pos: '50% 30%', accent: '#2b4787' },
+  commute: { src: 'art/sower.webp',                title: '씨 뿌리는 사람',        year: 1888, pos: '50% 20%', accent: '#9a6a12' },
+  work:    { src: 'art/irises.webp',               title: '붓꽃',                  year: 1889, pos: '50% 40%', accent: '#4a3f8c' },
+  after:   { src: 'art/wheatfield-cypresses.webp', title: '사이프러스가 있는 밀밭', year: 1889, pos: '50% 35%', accent: '#3d6a3a' },
+  evening: { src: 'art/cafe-terrace.webp',         title: '밤의 카페 테라스',      year: 1888, pos: '50% 25%', accent: '#a5651c' },
+  night:   { src: 'art/starry-night-rhone.webp',   title: '론강의 별이 빛나는 밤', year: 1888, pos: '50% 40%', accent: '#2c3f80' },
+  weekend: { src: 'art/almond-blossom.webp',       title: '꽃 피는 아몬드 나무',   year: 1890, pos: '50% 45%', accent: '#2a7180' },
+};
+function applyArt(id) {
+  const art = ART[id] || ART.dawn;
+  const hero = document.getElementById('hero');
+  hero.style.setProperty('--art', `url("${art.src}")`);
+  hero.style.setProperty('--art-pos', art.pos);
+  document.documentElement.style.setProperty('--art-accent', art.accent);
+  document.getElementById('artCap').textContent = `빈센트 반 고흐 · ${art.title}, ${art.year}`;
+}
+
 let selectedBand = null; // user preview
 const expanded = new Set();
 
@@ -289,6 +308,7 @@ function render() {
 
   document.getElementById('bandLabel').textContent = `${band.label}${selectedBand && selectedBand.id !== cur.id ? ' (미리보기)' : ''}`;
   document.getElementById('greeting').textContent = GREET[band.id] + name;
+  applyArt(band.id);
 
   const bandsForNav = isWeekend(now) ? [state.settings.bands[0], WEEKEND, ...state.settings.bands.slice(4)] : state.settings.bands;
   document.getElementById('bandNav').innerHTML = bandsForNav.map(b =>
