@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6feb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="나의하루">
+<title>나의하루</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <p class="band-label" id="bandLabel">…</p>
+    <h1 id="greeting">나의하루</h1>
+  </div>
+  <div class="top-right">
+    <p class="clock" id="clock">--:--</p>
+    <button class="icon-btn" id="openSettings" aria-label="설정">⚙︎</button>
+  </div>
+</header>
+
+<nav class="bands" id="bandNav" aria-label="시간대"></nav>
+
+<main>
+  <section id="nowCards" class="cards" aria-label="지금 필요한 카드"></section>
+  <h2 class="section-title">다른 카드</h2>
+  <section id="otherCards" class="cards" aria-label="다른 카드"></section>
+</main>
+
+<button class="fab" id="fab" aria-label="빠른 입력">+</button>
+
+<dialog id="quickDialog">
+  <form method="dialog" class="sheet" id="quickForm">
+    <h3>빠른 입력</h3>
+    <div class="seg" role="radiogroup">
+      <label><input type="radio" name="qtype" value="todo" checked> 할 일</label>
+      <label><input type="radio" name="qtype" value="memo"> 메모</label>
+      <label><input type="radio" name="qtype" value="workout"> 운동</label>
+    </div>
+    <input id="quickText" placeholder="내용을 적어 주세요" autocomplete="off">
+    <div class="row gap">
+      <button value="cancel" class="ghost">닫기</button>
+      <button id="quickSave" value="save" class="primary">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settingsDialog">
+  <form method="dialog" class="sheet" id="settingsForm">
+    <h3>설정</h3>
+    <label>이름(인사말) <input name="name" placeholder="예: 신조"></label>
+    <fieldset>
+      <legend>시간대 시작 시각</legend>
+      <div class="grid2" id="bandInputs"></div>
+    </fieldset>
+    <label>출근 도착 시각 <input type="time" name="workStart"></label>
+    <label>근무 시간(시간) <input type="number" step="0.5" min="1" max="14" name="workHours"></label>
+    <label>감사일기 Google Docs 주소 <input name="diaryUrl" placeholder="https://docs.google.com/document/d/..."></label>
+    <label>바로타 주소 <input name="barotaUrl"></label>
+    <label>뉴스 키워드(쉼표로 구분) <input name="newsKeywords"></label>
+    <label>체크할 습관(쉼표로 구분) <input name="habits"></label>
+    <div class="row gap">
+      <button type="button" class="ghost" id="exportData">데이터 내보내기</button>
+      <button type="button" class="ghost" id="importData">가져오기</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+    </div>
+    <div class="row gap">
+      <button value="cancel" class="ghost">닫기</button>
+      <button value="save" class="primary">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
